@@ -3,6 +3,8 @@ import pandas as pd
 from flask import Flask, request, jsonify
 from models.malicious_url_detection import predict_url_type, load_malicious_url_model
 from models.content_moderation import predictors, predict_fraudulent, load_content_moderation_models , spacy_tokenizer
+from models.transaction_fraud import predict,load_train_columns_model,load_transaction_model
+from models.detect_bots import predict_bot
 app = Flask(__name__)
 
 
@@ -43,6 +45,58 @@ def predict_content():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
+
+@app.route('/transaction', methods=['POST'])
+def submit_transaction():
+    # Get the transaction data from the POST request
+    transaction_data = request.json
+    # Convert the dictionary to a DataFrame
+    transaction_df = pd.DataFrame([transaction_data])
+    columns = load_train_columns_model()
+    model = load_transaction_model()
+    # Make predictions
+    prediction = predict(transaction_df,columns,model)
+    
+    # Map prediction values to labels
+    prediction_label = "fraudulent" if prediction[0] == 1 else "non-fraudulent"
+    
+    return jsonify({"prediction": prediction_label})
+
+
+
+@app.route('/detect_bots', methods=['POST'])
+def detect_bots():
+    # Get the data from the POST request
+    data = request.json
+
+    # Convert the data into a DataFrame
+    row = pd.DataFrame([data])
+
+
+    # Make predictions
+    predictions = predict_bot( row)
+
+    return jsonify(predictions)
+
+
+
+@app.route('/detect_bots_batch', methods=['POST'])
+def detect_bots_batch():
+    # Get the data from the POST request
+    data = request.json
+
+    # Convert the data into a DataFrame
+    batch_df = pd.DataFrame(data)
+
+
+    # Make predictions for each row in the batch
+    predictions = {}
+    for index, row in batch_df.iterrows():
+        prediction = predict_bot( pd.DataFrame([row]))
+        predictions[index] = prediction
+
+    return jsonify(predictions)
 
 if __name__ == '__main__':
     app.run(debug=True)
