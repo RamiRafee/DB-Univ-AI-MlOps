@@ -69,26 +69,39 @@ def load_content_moderation_models():
     return models
 
 def predict_fraudulent(data, models):
-    predictions = {}
-    for name, model in models.items():
-        # Preprocess the input data
-        data['text'] = data['title'] + ' ' + data['location'] + ' ' + data['brand'] + \
-            ' ' + data['breadcrumbs'] + ' ' + \
-            data['features'] + ' ' + data['industry']
-        data.fillna('', inplace=True)
+    label_map = {0: 'not fraudulent', 1: 'fraudulent'}
+    forest_model = models.get('RandomForestClassifier')
+    if forest_model is None:
+        return {}
 
-        # Feature engineering: Extract features from the text
-        data['cleaned_features'] = data['features'].apply(
-            extract_shoe_materials)
+    # Preprocess the input data
+    data['text'] = data['title'] + ' ' + data['location'] + ' ' + data['brand'] + \
+        ' ' + data['breadcrumbs'] + ' ' + \
+        data['features'] + ' ' + data['industry']
+    data.fillna('', inplace=True)
 
-        # Combine features with text
-        data['text'] = data['text'] + ' ' + data['cleaned_features']
+    # Feature engineering: Extract features from the text
+    data['cleaned_features'] = data['features'].apply(
+        extract_shoe_materials)
 
-        # Make prediction using the trained model
-        predicted = model.predict(data['text'])
-        predictions[name] = str(predicted[0])
+    # Combine features with text
+    data['text'] = data['text'] + ' ' + data['cleaned_features']
 
-    return predictions
+    # Make prediction using the RandomForest model
+    predicted = forest_model.predict(data['text'])
+    confidence = None
+
+    if hasattr(forest_model, "predict_proba"):
+        confidence = forest_model.predict_proba(data['text']).max(axis=1)[0]
+    # For models that don't have predict_proba, you can use other methods to estimate confidence
+
+    if confidence is not None:
+        return {
+            "best_model": "RandomForestClassifier",
+            "best_model_prediction": label_map[predicted[0]],
+            "confidence": confidence
+        }
+    return {}
 
 
 if __name__ == "__main__":

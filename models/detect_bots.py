@@ -40,7 +40,8 @@ def predict_bot( data):
         prediction_label = label_map[prediction[0]]
         return {
             "best_model":best_model,
-            "best_model_prediction": prediction_label
+            "best_model_prediction": prediction_label,
+            "confidence": max_confidence
             }
     return {}
 
