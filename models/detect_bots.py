@@ -23,6 +23,7 @@ def predict_bot( data):
     models = load_models(model_names)
 
     label_map = {0: 'human', 1: 'bot'}
+    user_id = data['user_id'].values[0]
     row = preprocess_data(data)
     max_confidence = 0
     best_model = None
@@ -39,6 +40,7 @@ def predict_bot( data):
         prediction = model.predict(row)
         prediction_label = label_map[prediction[0]]
         return {
+            "user_id": user_id,
             "best_model":best_model,
             "best_model_prediction": prediction_label,
             "confidence": max_confidence

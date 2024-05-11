@@ -4,7 +4,7 @@
 if ! command -v spacy &> /dev/null
 then
     echo "spaCy is not installed. Installing..."
-    pip install spacy
+    python -m pip install spacy
 fi
 
 # Download the 'en_core_web_sm' model
